@@ -13,11 +13,7 @@ Paper title: Improving Recommendation Fairness via Data Augmentation
 
 ### Installation
 
-- Clone this repo:
-
-```bash
-git clone https://github.com/newlei/LR-GCCF.git
-```
+- Clone this repo
 
 ### Train/test
 
