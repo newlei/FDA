@@ -136,15 +136,15 @@ def all_metrics(top_k):
             all_data,test_data = get_real_data(idx_pre_s,idx_pre_e)
             len_test_data =test_data.sum(-1) 
 
-            #这里的都设置为-1000可以使得排序加速。
-            x1=np.where(all_data>0,-1000,pre_all) #所有的在trianing，val和test中的数据，都设置为-1000。其他为原始预测值
-            x2=np.where(test_data>0,pre_all,-1000)#只把test中的数据，预测值保留。其他都是-1000 
+             
+            x1=np.where(all_data>0,-1000,pre_all) 
+            x2=np.where(test_data>0,pre_all,-1000)
             
             pre_rank = np.concatenate((x1,x2),axis=-1)
             del x1, x2,pre_all,all_data,test_data
             gc.collect() 
             
-            #排序改进算法，替代了这行代码indice1=np.argsort(-pre_rank)[:, :20]
+            
             indices_part = np.argpartition(pre_rank, -top_k)[:,-top_k:] 
             values_part = np.partition(pre_rank, -top_k)[:,-top_k:]
             indices_sort = np.argsort(-values_part)
@@ -153,9 +153,8 @@ def all_metrics(top_k):
             del pre_rank,indices_part,values_part,indices_sort
             gc.collect() 
             
-            indice2 = np.where(indice1>item_num,1,0) #indice1>item_num是因为test的预测值，对应的id都是大于item_num看pre_rank 
-            rank_topk[idx_pre_s:idx_pre_e,:]=indice1 #记录下来topK中的item
-        
+            indice2 = np.where(indice1>item_num,1,0) 
+            rank_topk[idx_pre_s:idx_pre_e,:]=indice1 
             
             len_large = np.where(len_test_data<top_k,len_test_data,top_k)
             max_hr = len_large
@@ -177,7 +176,6 @@ def all_metrics(top_k):
         hr_test=round(HR/HR_num,4)
         ndcg_test=round(NDCG/NDCG_num,4)    
         elapsed_time = time.time() - test_start_time    
-        # test_loss,hr_test,ndcg_test = evaluate.metrics(model,testing_loader,top_k,num_negative_test_val,batch_size) 
         if i_pre<len_split:
             str_print_evl="part user test-"
         else:

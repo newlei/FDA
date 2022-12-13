@@ -133,15 +133,14 @@ def all_metrics(top_k):
             all_data,test_data = get_real_data(idx_pre_s,idx_pre_e)
             len_test_data =test_data.sum(-1) 
 
-            #这里的都设置为-1000可以使得排序加速。
-            x1=np.where(all_data>0,-1000,pre_all) #所有的在trianing，val和test中的数据，都设置为-1000。其他为原始预测值
-            x2=np.where(test_data>0,pre_all,-1000)#只把test中的数据，预测值保留。其他都是-1000 
+             
+            x1=np.where(all_data>0,-1000,pre_all) 
+            x2=np.where(test_data>0,pre_all,-1000)
             
             pre_rank = np.concatenate((x1,x2),axis=-1)
             del x1, x2,pre_all,all_data,test_data
             gc.collect() 
             
-            #排序改进算法，替代了这行代码indice1=np.argsort(-pre_rank)[:, :20]
             indices_part = np.argpartition(pre_rank, -top_k)[:,-top_k:] 
             values_part = np.partition(pre_rank, -top_k)[:,-top_k:]
             indices_sort = np.argsort(-values_part)
@@ -150,9 +149,8 @@ def all_metrics(top_k):
             del pre_rank,indices_part,values_part,indices_sort
             gc.collect() 
             
-            indice2 = np.where(indice1>item_num,1,0) #indice1>item_num是因为test的预测值，对应的id都是大于item_num看pre_rank 
-            rank_topk[idx_pre_s:idx_pre_e,:]=indice1 #记录下来topK中的item
-        
+            indice2 = np.where(indice1>item_num,1,0) 
+            rank_topk[idx_pre_s:idx_pre_e,:]=indice1 
             
             len_large = np.where(len_test_data<top_k,len_test_data,top_k)
             max_hr = len_large
@@ -162,7 +160,7 @@ def all_metrics(top_k):
             hr_topK = indice2.sum(-1)
             ndcg_topK = (indice2*ndcg_each).sum(-1) 
             hr_t1 = hr_topK/max_hr
-            hr_t = hr_t1[~np.isnan(hr_t1)]#有一些用户不在，导致了max_hr==0，结果有nan，去除掉。
+            hr_t = hr_t1[~np.isnan(hr_t1)]
             ndcg_t=ndcg_topK/max_ndcg
             e4_time = time.time() - s_time
     #         print('cal-hr-ndcg',e4_time) 
@@ -170,20 +168,17 @@ def all_metrics(top_k):
             NDCG+=ndcg_t.sum(-1)
             HR_num+=hr_t.shape[0]
             NDCG_num+=ndcg_t.shape[0]
-    #         pdb.set_trace()
-            #if i_pre==10:#方便计算，这里最算前3w个用户，方便看初步结果，然后定哪些论文。细致算即可。
-            #   break 
-    #         break
+ 
         hr_test=round(HR/HR_num,4)
         ndcg_test=round(NDCG/NDCG_num,4)    
         elapsed_time = time.time() - test_start_time    
-        # test_loss,hr_test,ndcg_test = evaluate.metrics(model,testing_loader,top_k,num_negative_test_val,batch_size) 
+
         if i_pre<len_split:
             str_print_evl="part user test-"
         else:
             str_print_evl=""
         str_print_evl+=" Top K:"+str(top_k)+" test"+" HR:"+str(hr_test)+' NDCG:'+str(ndcg_test) 
-        # print(str_print_evl)
+
         
         DP_res = dict()
         EO_res = dict()
@@ -204,7 +199,7 @@ def all_metrics(top_k):
             if len(one_data)<1:
                 continue
             res_v = one_data.sum()-(1-one_data).sum()
-    #         res2_v = one_data.sum()/male_num-(1-one_data).sum()/female_num
+
             res2_v = one_data.sum()/len(one_data)-(1-one_data).sum()/len(one_data)
             DP.append(np.abs(res2_v))
         DP_test =round(np.array(DP).mean() ,6)
@@ -218,7 +213,7 @@ def all_metrics(top_k):
             if len(one_data)<1:
                 continue
             res_v = one_data.sum()-(1-one_data).sum()
-    #         res2_v = one_data.sum()/male_num-(1-one_data).sum()/female_num
+
             res2_v = one_data.sum()/len(one_data)-(1-one_data).sum()/len(one_data)
             EO.append(np.abs(res2_v)) 
         EO_test =round(np.array(EO).mean(),6)

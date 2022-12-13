@@ -20,11 +20,13 @@ class BPRData(data.Dataset):
         self.num_ng = num_ng
         self.is_training = is_training
         self.data_set_count = data_set_count 
-        self.set_all_item=set(range(num_item)) 
-        
+        self.set_all_item=set(range(num_item))  
+
         self.base_path = ''
+        self.save_dataid = 0
+        
         if self.is_training==0:
-            self.base_path = '../data/lastfm_reload/train/'
+            self.base_path = '../data/lastfm_reload/train/'#_seed2024
             if (os.path.exists(self.base_path)):
                 print('reload train has model save path')
             else:
@@ -32,26 +34,20 @@ class BPRData(data.Dataset):
         elif self.is_training==1:
             self.base_path = '../data/lastfm_reload/test/'
             if (os.path.exists(self.base_path)):
-                print('reload train has model save path')
+                print('reload test has model save path')
             else:
                 os.makedirs(self.base_path)
         else:
             self.base_path = '../data/lastfm_reload/val/'
             if (os.path.exists(self.base_path)):
-                print('reload train has model save path')
+                print('reload val has model save path')
             else:
                 os.makedirs(self.base_path)
-
+                
         self.save_dataid = self.countPath(self.base_path) 
         self.seed = 2024
 
-    def ng_sample(self): 
-        # if self.save_dataid>200:
-        #     rand_id = self.seed-2022
-        #     save_path = self.base_path+str(rand_id)+'.npy'
-        #     self.features_fill = np.load(save_path)
-        #     self.seed = self.seed + 1
-        #     return
+    def ng_sample(self):
         if self.save_dataid>(self.seed-2024):
             rand_id = self.seed-2024
             save_path = self.base_path+str(rand_id)+'.npy'
@@ -84,7 +80,7 @@ class BPRData(data.Dataset):
             if os.path.isfile(os.path.join(base_path,item)):
                 tmp+=1
         return tmp
-           
+    
     def __len__(self):  
         return self.num_ng*self.data_set_count
 
@@ -104,38 +100,34 @@ class generate_adj():
         self.user_num=user_num
         self.item_num=item_num 
 
-    def readD(self, set_matrix, num_):
+    def readD(self,set_matrix,num_):
         user_d=[] 
-        for i in range(num_):
-            if i not in set_matrix:
-                len_set=1.0# 
-            else:
-                len_set=1.0/(len(set_matrix[i])+1)  
+        for i in range(num_): 
+            # len_set=1.0#/(len(set_matrix[i])+1)  
+            len_set=1.0/(len(set_matrix[i])+1)  
             user_d.append(len_set)
-        return user_d
-
+        return user_d 
     #user-item  to user-item matrix and item-user matrix
     def readTrainSparseMatrix(self,set_matrix,is_user,u_d,i_d):
         user_items_matrix_i=[]
-        user_items_matrix_v=[]  
+        user_items_matrix_v=[] 
         if is_user:
             d_i=u_d
             d_j=i_d
-            user_items_matrix_i.append([self.user_num-1,self.item_num-1])
-            user_items_matrix_v.append(0)
         else:
-            user_items_matrix_i.append([self.item_num-1,self.user_num-1])
-            user_items_matrix_v.append(0)
             d_i=i_d
             d_j=u_d
         for i in set_matrix: 
             len_set=len(set_matrix[i])#+1
-            for j in set_matrix[i]:
+            for pair_v in set_matrix[i]:
+                # pdb.set_trace()
+                r_v,j =pair_v
                 user_items_matrix_i.append([i,j])
-#                 d_i_j=np.sqrt(d_i[i]*d_j[j])
-                d_i_j=(d_i[i]*d_j[j])
-                #1/sqrt((d_i+1)(d_j+1)) 
-                user_items_matrix_v.append(d_i_j)#(1./len_set) 
+                # d_i_j=np.sqrt(d_i[i]*d_j[j])
+                #1/sqrt((d_i+1)(d_j+1))
+                user_items_matrix_v.append(r_v*1./len_set) 
+                #user_items_matrix_v.append((1.+r_v/5.0)/len_set) 
+                # user_items_matrix_v.append(d_i_j)#(1./len_set) 
         user_items_matrix_i=torch.cuda.LongTensor(user_items_matrix_i)
         user_items_matrix_v=torch.cuda.FloatTensor(user_items_matrix_v)
         return torch.sparse.FloatTensor(user_items_matrix_i.t(), user_items_matrix_v) 

@@ -17,9 +17,9 @@ def setup_seed(seed):
         torch.cuda.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
-setup_seed(2022)
+setup_seed(2024) 
 
- 
+
 import torchvision.transforms as transforms
 from torchvision.utils import save_image
 from torch.utils.data import DataLoader
@@ -35,21 +35,24 @@ import copy
 from collections import defaultdict
 import time
 import data_utils 
-from shutil import copyfile    
+from shutil import copyfile
 
-dataset_base_path='../data/ml/' 
+dataset_base_path='../data/lastfm/' 
+user_reid, item_reid= np.load(dataset_base_path+'/u_i_reid.npy',allow_pickle=True)
 
-##movieLens-1M
-user_num=6040#user_size
-item_num=3952#item_size 
+
+##lastfm
+user_num=len(user_reid)#  
+item_num=len(item_reid)#
 factor_num=64
 batch_size=2048*100#10
 top_k=20
 num_negative_test_val=-1##all
 
-run_id="fda_bpr_ml"
+
+run_id="fda_bpr_lastfm"
 print('Model:',run_id)
-dataset='ml'
+dataset='lastfm'
 
 path_save_model_base='./best_model/'+run_id
 if (os.path.exists(path_save_model_base)):
@@ -57,13 +60,14 @@ if (os.path.exists(path_save_model_base)):
 else:
     os.makedirs(path_save_model_base)
 
-
-
 train_dict,train_dict_count = np.load(dataset_base_path+'/train.npy',allow_pickle=True)
 test_dict,test_dict_count = np.load(dataset_base_path+'/test.npy',allow_pickle=True) 
+val_dict,val_dict_count = np.load(dataset_base_path+'/val.npy',allow_pickle=True)  
+
 users_features=np.load(dataset_base_path+'/users_features.npy')
 users_features = users_features[:,0]#gender
 
+print(train_dict_count,test_dict_count,val_dict_count)
 
 
 class FairData(nn.Module):
@@ -87,17 +91,16 @@ class FairData(nn.Module):
         self.noise_item = nn.Embedding(item_num, factor_num)    
         nn.init.normal_(self.noise_item.weight, std=0.01)  
         
-#         self.zero_noise_item = torch.zeros(item_num, factor_num*2).cuda()
         
         self.min_clamp=-1
         self.max_clamp=1
-   
+    
     def fake_pos(self,male_noise_i_emb, female_noise_i_emb): 
         male_len = male_noise_i_emb.shape[0]
-        female_len = female_noise_i_emb.shape[0]    
- 
+        female_len = female_noise_i_emb.shape[0]
+
         avg_len = 1
-        male_end_idx = male_len%avg_len+avg_len
+        male_end_idx = male_len%avg_len+avg_len# 
         male_noise_i_reshape = male_noise_i_emb[:-male_end_idx].reshape(-1,avg_len, self.factor_num)
         male_noise_i_mean = torch.mean(male_noise_i_reshape,axis=1)
         male_noise_len = male_noise_i_mean.shape[0]
@@ -106,7 +109,7 @@ class FairData(nn.Module):
         else:
             expand_len = int(female_len/male_noise_len)+1 
             female_like = male_noise_i_mean.repeat(expand_len,1)[:female_len]
-            
+        
         
         female_end_idx = female_len%avg_len+avg_len 
         female_noise_i_emb_reshape = female_noise_i_emb[:-female_end_idx].reshape(-1,avg_len,self.factor_num)
@@ -136,13 +139,14 @@ class FairData(nn.Module):
         
         u_emb = F.embedding(u_batch,user_emb)
         i_emb = F.embedding(i_batch,item_emb)  
-        j_emb = F.embedding(j_batch,item_emb) 
+        j_emb = F.embedding(j_batch,item_emb)
+         
         noise_i_emb2 = F.embedding(i_batch,noise_emb)
-        len_noise = int(i_emb.size()[0]*0.4)
+        len_noise = int(i_emb.size()[0]*0.3)
         add_emb = torch.cat((i_emb[:-len_noise],noise_i_emb2[-len_noise:]),0)
 
         noise_j_emb2 = F.embedding(j_batch,noise_emb)
-        len_noise = int(j_emb.size()[0]*0.4)
+        len_noise = int(j_emb.size()[0]*0.3)
         add_emb_j = torch.cat((noise_j_emb2[-len_noise:],j_emb[:-len_noise]),0)
         
         #according gender attribute, selecting embebdding
@@ -208,15 +212,21 @@ task_optimizer = torch.optim.Adam(list(model.embed_user.parameters()) + \
 noise_optimizer = torch.optim.Adam(list(model.noise_item.parameters()),lr=0.001) 
 
 ############ dataset #############
+
 train_dataset = data_utils.BPRData(
         train_dict=train_dict,num_item=item_num, num_ng=5 ,is_training=0, data_set_count=train_dict_count)
 train_loader = DataLoader(train_dataset,
-        batch_size=batch_size, shuffle=True, num_workers=4)
+        batch_size=batch_size, shuffle=True, num_workers=2)
 
 testing_dataset_loss = data_utils.BPRData(
         train_dict=test_dict,num_item=item_num, num_ng=5 ,is_training=1, data_set_count=test_dict_count)
 testing_loader_loss = DataLoader(testing_dataset_loss,
         batch_size=test_dict_count, shuffle=False, num_workers=0)
+
+val_dataset_loss = data_utils.BPRData(
+        train_dict=val_dict,num_item=item_num, num_ng=5 ,is_training=2, data_set_count=val_dict_count)
+val_loader_loss = DataLoader(val_dataset_loss,
+        batch_size=val_dict_count, shuffle=False, num_workers=0)
 
 ######################################################## TRAINING #####################################
 
@@ -227,13 +237,12 @@ def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
 for epoch in range(150):
-    model.train()
+    model.train()  
     start_time = time.time()
-    print('negative samping, need some minute')
+    print('negative samping, about 3 minute')
     train_loader.dataset.ng_sample()
-    print('negative samping, end')
-
-
+    print('negative samping is end')
+    
     loss_current = [[],[],[],[]]
         
     for user_batch,  itemi_batch,itemj_batch, in train_loader: 
@@ -266,17 +275,17 @@ for epoch in range(150):
     str_print_train="epoch:"+str(epoch)+' time:'+str(round(elapsed_time,1)) 
     
     loss_str='loss' 
-    loss_str+=' task:'+str(train_loss_task) 
+    loss_str+=' task:'+str(train_loss_task)
     str_print_train +=loss_str
     print(run_id+' '+str_print_train)
-    
     
     model.eval()
 
     f1_u_embedding,f1_i_emb= model.embed(1)
     user_e_f1 = f1_u_embedding.cpu().numpy() 
     item_e_f1 = f1_i_emb.cpu().numpy()  
-    if epoch==135:
+    
+    if epoch==82:
         PATH_model=path_save_model_base+'/best_model.pt'
         torch.save(model.state_dict(), PATH_model)
         
@@ -288,3 +297,6 @@ for epoch in range(150):
         print("Training end")
         os.system("python ./test.py --runid=\'"+run_id+"\'")
         exit()
+    
+
+    

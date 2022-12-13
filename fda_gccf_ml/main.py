@@ -131,7 +131,7 @@ class GCN(nn.Module):
         female_len = female_noise_i_emb.shape[0]
 
         avg_len = 1
-        male_end_idx = male_len%avg_len+avg_len#最后的一点去掉，方面每100个求和。不然最后有零头，没法统一处理 
+        male_end_idx = male_len%avg_len+avg_len
         male_noise_i_reshape = male_noise_i_emb[:-male_end_idx].reshape(-1,avg_len, self.factor_num*3)
         male_noise_i_mean = torch.mean(male_noise_i_reshape,axis=1)
         male_noise_len = male_noise_i_mean.shape[0]

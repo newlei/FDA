@@ -132,17 +132,10 @@ class GCN(nn.Module):
     def fake_pos(self,male_noise_i_emb, female_noise_i_emb): 
         male_len = male_noise_i_emb.shape[0]
         female_len = female_noise_i_emb.shape[0]    
-# #         #打乱一下，方面后面的求和计算，这样可以保证更具有随机性。
-#         male_indexes = torch.randperm(male_i_emb.shape[0])
-#         male_i_emb = male_i_emb[male_indexes]
-#         male_noise_i_emb = male_noise_i_emb[male_indexes]
-        
-#         female_indexes = torch.randperm(female_i_emb.shape[0])
-#         female_i_emb = female_i_emb[female_indexes] 
-#         female_noise_i_emb = female_noise_i_emb[female_indexes] 
+ 
 
         avg_len = 1
-        male_end_idx = male_len%avg_len+avg_len#最后的一点去掉，方面每100个求和。不然最后有零头，没法统一处理 
+        male_end_idx = male_len%avg_len+avg_len
         male_noise_i_reshape = male_noise_i_emb[:-male_end_idx].reshape(-1,avg_len, self.factor_num*3)
         male_noise_i_mean = torch.mean(male_noise_i_reshape,axis=1)
         male_noise_len = male_noise_i_mean.shape[0]
@@ -172,8 +165,7 @@ class GCN(nn.Module):
         
 #         user_emb,item_emb = self.gcn_layer()
         noise_emb_based = self.noise_item.weight 
-#         noise_emb = torch.clamp(noise_emb, min=self.min_clamp, max=self.max_clamp) 
-        noise_emb_based =noise_emb_based+items_embedding # noise_emb+item_emb 
+        noise_emb_based =noise_emb_based+items_embedding  
         _,noise_emb = self.gcn_layer(users_embedding,noise_emb_based)
         
         #get gender attribute
@@ -185,7 +177,7 @@ class GCN(nn.Module):
         u_emb = F.embedding(u_batch,user_emb)
         i_emb = F.embedding(i_batch,item_emb)  
         j_emb = F.embedding(j_batch,item_emb)
-        #这里得到虚假的样本，并且要保证推荐性能
+        
         noise_i_emb2 = F.embedding(i_batch,noise_emb)
         len_noise = int(i_emb.size()[0]*0.4)
         add_emb = torch.cat((i_emb[:-len_noise],noise_i_emb2[-len_noise:]),0)
@@ -256,12 +248,7 @@ for u_id in train_dict:
             train_item_dict[v_id]=[]
         train_item_dict[v_id].append(u_id)
 
-# count=0
-# for i in range(item_num): 
-#     if i not in train_item_dict:
-#         print('item',i,count)
-#         count+=1
-    
+ 
 g_adj= data_utils.generate_adj(train_dict,train_item_dict,user_num,item_num)
 pos_adj=g_adj.generate_pos()
 
@@ -276,7 +263,7 @@ noise_optimizer = torch.optim.Adam(list(model.noise_item.parameters()),lr=0.001)
 # task_optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 ############ dataset #############
-# train_dict=None,num_item=0, num_ng=1, is_training=None, data_set_count=0,all_rating=None):
+ 
 
 train_dataset = data_utils.BPRData(
         train_dict=train_dict,num_item=item_num, num_ng=5 ,is_training=0, data_set_count=train_dict_count)
@@ -364,5 +351,4 @@ for epoch in range(150):
         os.system("python ./test.py --runid=\'"+run_id+"\'")
         exit()
 
-#     user_e = user_e_f1
-#     item_e = item_e_f1
+ 

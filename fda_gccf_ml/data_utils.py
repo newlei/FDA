@@ -22,24 +22,24 @@ class BPRData(data.Dataset):
         self.data_set_count = data_set_count 
         self.set_all_item=set(range(num_item)) 
         
-        # self.base_path = ''
-        # if self.is_training==0:
-        #     self.base_path = '../data/ml_reload/train/'
-        # elif self.is_training==1:
-        #     self.base_path = '../data/ml_reload/test/'
-        # else:
-        #     self.base_path = '../data/ml_reload/val/'
-        # self.save_dataid = self.countPath(self.base_path) 
+        self.base_path = ''
+        if self.is_training==0:
+            self.base_path = '../data/ml_reload/train/'
+        elif self.is_training==1:
+            self.base_path = '../data/ml_reload/test/'
+        else:
+            self.base_path = '../data/ml_reload/val/'
+        self.save_dataid = self.countPath(self.base_path) 
         
         self.seed = 2022
     def ng_sample(self):
 
-        # if self.save_dataid>(self.seed-2022):
-        #     rand_id = self.seed-2022
-        #     save_path = self.base_path+str(rand_id)+'.npy'
-        #     self.features_fill = np.load(save_path)
-        #     self.seed = self.seed + 1
-        #     return
+        if self.save_dataid>(self.seed-2022):
+            rand_id = self.seed-2022
+            save_path = self.base_path+str(rand_id)+'.npy'
+            self.features_fill = np.load(save_path)
+            self.seed = self.seed + 1
+            return
 
         self.features_fill = []
         np.random.seed(self.seed)
