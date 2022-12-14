@@ -7,7 +7,7 @@ Paper title: Improving Recommendation Fairness via Data Augmentation
 
 - PyTorch
 - Python 3.5
-- CPU or NVIDIA GPU + CUDA CuDNN
+- NVIDIA GPU + CUDA CuDNN
 
 ## Getting Started
 
