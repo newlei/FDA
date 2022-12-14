@@ -86,7 +86,7 @@ def get_real_data(idx_pre_s,idx_pre_e):
     test_idx = sparse.csr_matrix((test_data, (test_row, test_col)), shape=(one_data_len, item_num))   
     return all_idx.toarray(),test_idx.toarray()
 
-    
+np.seterr(divide='ignore',invalid='ignore')
     
 def largest_indices(ary, n):
     """Returns the n largest indices from a numpy array."""

@@ -47,6 +47,7 @@ testing_user_set,test_dict_count = np.load(dataset_base_path+'/test.npy',allow_p
 val_user_set,val_dict_count = np.load(dataset_base_path+'/val.npy',allow_pickle=True)  
 
 ########################### TESTING ##################################### 
+np.seterr(divide='ignore',invalid='ignore')
 
 def get_real_data(idx_pre_s,idx_pre_e):
     all_row = []

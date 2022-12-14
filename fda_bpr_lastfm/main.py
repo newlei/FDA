@@ -67,8 +67,8 @@ val_dict,val_dict_count = np.load(dataset_base_path+'/val.npy',allow_pickle=True
 users_features=np.load(dataset_base_path+'/users_features.npy')
 users_features = users_features[:,0]#gender
 
-print(train_dict_count,test_dict_count,val_dict_count)
-
+# print(train_dict_count,test_dict_count,val_dict_count)
+np.seterr(divide='ignore',invalid='ignore')
 
 class FairData(nn.Module):
     def __init__(self, user_num, item_num, factor_num,users_features,gcn_user_embs=None,gcn_item_embs=None):
@@ -235,6 +235,7 @@ print('--------training processing-------')
 count, best_hr = 0, 0  
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
+trained_end = 0 
 
 for epoch in range(150):
     model.train()  
@@ -273,7 +274,9 @@ for epoch in range(150):
     train_loss_sample = round(np.mean(loss_current[1]),4) 
     train_loss_noise = round(np.mean(loss_current[2]),4) 
     str_print_train="epoch:"+str(epoch)+' time:'+str(round(elapsed_time,1)) 
-    
+    if epoch==82:
+        trained_end=1
+
     loss_str='loss' 
     loss_str+=' task:'+str(train_loss_task)
     str_print_train +=loss_str
@@ -285,7 +288,7 @@ for epoch in range(150):
     user_e_f1 = f1_u_embedding.cpu().numpy() 
     item_e_f1 = f1_i_emb.cpu().numpy()  
     
-    if epoch==82:
+    if trained_end == 1:#epoch==82:
         PATH_model=path_save_model_base+'/best_model.pt'
         torch.save(model.state_dict(), PATH_model)
         

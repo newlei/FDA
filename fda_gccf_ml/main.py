@@ -59,6 +59,7 @@ if (os.path.exists(path_save_model_base)):
 else:
     os.makedirs(path_save_model_base)
 
+np.seterr(divide='ignore',invalid='ignore')
 
 train_dict,train_dict_count = np.load(dataset_base_path+'/train.npy',allow_pickle=True)  
 test_dict,test_dict_count = np.load(dataset_base_path+'/test.npy',allow_pickle=True) 
@@ -69,7 +70,6 @@ for i in train_dict:
     len_one = len(train_dict[i])
     if len_one<7:
         print(len_one,i)
-
 
 class GCN(nn.Module):
     def __init__(self, user_num, item_num, factor_num,users_features,adj_matrix):

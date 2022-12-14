@@ -72,7 +72,7 @@ for i in train_dict:
         print(len_one,i)
 # pdb.set_trace()
 # print(train_dict_count,test_dict_count,val_dict_count)
-
+np.seterr(divide='ignore',invalid='ignore')
 
 class GCN(nn.Module):
     def __init__(self, user_num, item_num, factor_num,users_features,adj_matrix):
@@ -287,12 +287,14 @@ print('--------training processing-------')
 count, best_hr = 0, 0  
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
+trained_end = 0 
 
 for epoch in range(150):
     model.train()  
     start_time = time.time()  
     print('negative samping, about 3 minute')
     train_loader.dataset.ng_sample()
+    print('negative samping is end')
     
     loss_current = [[],[],[],[]] 
         
@@ -324,7 +326,9 @@ for epoch in range(150):
     train_loss_sample = round(np.mean(loss_current[1]),4) 
     train_loss_noise = round(np.mean(loss_current[2]),4) 
     str_print_train="epoch:"+str(epoch)+' time:'+str(round(elapsed_time,1)) 
-     
+    if epoch==48:
+        trained_end=1
+
 
     loss_str='loss' 
     loss_str+=' task:'+str(train_loss_task)
@@ -338,7 +342,7 @@ for epoch in range(150):
     user_e_f1 = f1_u_embedding.cpu().numpy() 
     item_e_f1 = f1_i_emb.cpu().numpy()
     
-    if epoch==48:
+    if trained_end == 1:#epoch==48:
         PATH_model=path_save_model_base+'/best_model.pt'
         torch.save(model.state_dict(), PATH_model)
         
