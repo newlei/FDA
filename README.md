@@ -1,5 +1,4 @@
-# FDA_anonymous
-Used to anonymously share the FDA code for the WWW conference.
+# FDA
 
 Paper title: Improving Recommendation Fairness via Data Augmentation
 
