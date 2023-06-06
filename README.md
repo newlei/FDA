@@ -62,8 +62,8 @@ python main.py
 > female_gender = (1-gender).type(torch.BoolTensor)
 > ```
 > Replace the above code with the following code:
-```
-gender = F.embedding(u_batch,torch.unsqueeze(self.users_features,1)).reshape(-1)
-male_gender = gender.type(torch.BoolTensor).cuda()
-female_gender = (1-gender).type(torch.BoolTensor).cuda()        
-```
+> ```
+> gender = F.embedding(u_batch,torch.unsqueeze(self.users_features,1)).reshape(-1)
+> male_gender = gender.type(torch.BoolTensor).cuda()
+> female_gender = (1-gender).type(torch.BoolTensor).cuda()        
+> ```
