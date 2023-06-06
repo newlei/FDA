@@ -8,7 +8,7 @@ Paper title: Improving Recommendation Fairness via Data Augmentation [arxiv](htt
 
 ## Prerequisites
 
-- PyTorch
+- PyTorch 1.7
 - Python 3.5
 - NVIDIA GPU + CUDA CuDNN
 
@@ -50,3 +50,19 @@ python main.py
 ```
 
 **Note**: The results of FDA will be output on the terminal after the training.
+
+
+**ERROR**: 
+1. The error " 'weight' must be 2-D" occurred due to inconsistent versions of the Pytorch version.
+
+```
+gender = F.embedding(u_batch,self.users_features)
+male_gender = gender.type(torch.BoolTensor)
+female_gender = (1-gender).type(torch.BoolTensor)
+```
+Replace the above code with the following code:
+```
+gender = F.embedding(u_batch,torch.unsqueeze(self.users_features,1)).reshape(-1)
+male_gender = gender.type(torch.BoolTensor).cuda()
+female_gender = (1-gender).type(torch.BoolTensor).cuda()        
+```
