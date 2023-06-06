@@ -55,6 +55,7 @@ python main.py
 **ERROR**: 
 1. The error " 'weight' must be 2-D" occurred due to inconsistent versions of the Pytorch version.
 
+- Solution:
 ```
 gender = F.embedding(u_batch,self.users_features)
 male_gender = gender.type(torch.BoolTensor)
